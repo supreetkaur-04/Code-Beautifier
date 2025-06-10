@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Beautifier & Transpiler</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.7/beautify.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.7/beautify-html.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-beautify/1.14.7/beautify-css.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.21.4/babel.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #5f5151, #1a2a6c);
+            min-height: 100vh;
+            padding: 20px;
+            color: #f0f0f0;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            animation: fadeIn 1s ease-out;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 700px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+            background: rgba(25, 25, 45, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            padding: 15px;
+            background: rgba(40, 40, 70, 0.6);
+            border-radius: 10px;
+        }
+        
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        label {
+            font-weight: 500;
+            font-size: 1rem;
+        }
+        
+        select, button {
+            padding: 12px 20px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(60, 60, 100, 0.8);
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        select {
+            min-width: 150px;
+        }
+        
+        select:focus, button:focus {
+            outline: 2px solid #ff7e5f;
+        }
+        
+        button {
+            background: linear-gradient(to right, #ff7e5f, #feb47b);
+            color: #1a1a2e;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        .editor-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 25px;
+            height: 500px;
+        }
+        
+        @media (max-width: 900px) {
+            .editor-container {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+        }
+        
+        .editor-section {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .editor-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 10px;
+        }
+        
+        .editor-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .editor-actions button {
+            padding: 6px 12px;
+            font-size: 0.9rem;
+            background: rgba(60, 60, 100, 0.8);
+        }
+        
+        textarea {
+            flex: 1;
+            background: rgba(30, 30, 50, 0.9);
+            border: 1px solid rgba(100, 100, 180, 0.4);
+            border-radius: 8px;
+            padding: 20px;
+            color: #f0f0f0;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 15px;
+            resize: none;
+            line-height: 1.5;
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.3);
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #ff7e5f;
+        }
+        
+        .info-panel {
+            background: rgba(40, 40, 70, 0.6);
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        .info-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #ff7e5f;
+            font-size: 1.2rem;
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        
+        .feature-card {
+            background: rgba(50, 50, 85, 0.7);
+            padding: 18px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            transition: transform 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            background: rgba(60, 60, 105, 0.8);
+        }
+        
+        .feature-icon {
+            font-size: 1.8rem;
+            color: #feb47b;
+        }
+        
+        .feature-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #feb47b;
+        }
+        
+        .feature-desc {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            line-height: 1.5;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 30px 0 15px;
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 126, 95, 0.7); }
+            70% { box-shadow: 0 0 0 12px rgba(255, 126, 95, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 126, 95, 0); }
+        }
+        
+        .language-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .language-icon {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-code"></i> Code Beautifier & Transpiler</h1>
+            <p class="subtitle">Format and transform your code instantly. Supports JavaScript, HTML, CSS, JSX, and more. Clean, minify, and convert your code with ease.</p>
+        </header>
+        
+        <div class="app-container">
+            <div class="controls">
+                <div class="control-group">
+                    <label for="language"><i class="fas fa-language"></i> Language:</label>
+                    <select id="language">
+                        <option value="javascript">JavaScript</option>
+                        <option value="html">HTML</option>
+                        <option value="css">CSS</option>
+                        <option value="json">JSON</option>
+                        <option value="jsx">JSX (React)</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label for="action"><i class="fas fa-cogs"></i> Action:</label>
+                    <select id="action">
+                        <option value="beautify">Beautify</option>
+                        <option value="minify">Minify</option>
+                        <option value="transpile">Transpile (ES6 to ES5)</option>
+                    </select>
+                </div>
+                
+                <button id="process-btn" class="pulse">
+                    <i class="fas fa-magic"></i> Process Code
+                </button>
+                
+                <button id="clear-btn">
+                    <i class="fas fa-broom"></i> Clear
+                </button>
+            </div>
+            
+            <div class="editor-container">
+                <div class="editor-section">
+                    <div class="editor-header">
+                        <div class="editor-title">
+                            <i class="fas fa-pen"></i> Input Code
+                        </div>
+                        <div class="editor-actions">
+                            <button id="sample-btn"><i class="fas fa-vial"></i> Load Sample</button>
+                        </div>
+                    </div>
+                    <textarea id="input-code" placeholder="Enter your code here...">function example() {
+  // This is sample code
+  const data = { name: "John", age: 30, hobbies: ["reading", "coding"] };
+  console.log(data);
+}</textarea>
+                </div>
+                
+                <div class="editor-section">
+                    <div class="editor-header">
+                        <div class="editor-title">
+                            <i class="fas fa-code"></i> Output Code
+                        </div>
+                        <div class="editor-actions">
+                            <button id="copy-btn"><i class="fas fa-copy"></i> Copy</button>
+                        </div>
+                    </div>
+                    <textarea id="output-code" placeholder="Your formatted code will appear here..." readonly></textarea>
+                </div>
+            </div>
+            
+            <div class="info-panel">
+                <div class="info-header">
+                    <i class="fas fa-info-circle"></i>
+                    <h2>Features & Capabilities</h2>
+                </div>
+                
+                <div class="features">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-brush"></i>
+                        </div>
+                        <h3 class="feature-title">Code Beautifying</h3>
+                        <p class="feature-desc">Automatically formats your code with proper indentation, spacing, and line breaks for improved readability.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-compress-arrows-alt"></i>
+                        </div>
+                        <h3 class="feature-title">Minification</h3>
+                        <p class="feature-desc">Removes all unnecessary characters from source code without changing its functionality to reduce file size.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-exchange-alt"></i>
+                        </div>
+                        <h3 class="feature-title">Transpilation</h3>
+                        <p class="feature-desc">Convert modern JavaScript (ES6+) to older versions (ES5) for better browser compatibility.</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-file-code"></i>
+                        </div>
+                        <h3 class="feature-title">Multi-language Support</h3>
+                        <p class="feature-desc">Works with JavaScript, HTML, CSS, JSON, and JSX. More languages coming soon!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const inputCode = document.getElementById('input-code');
+            const outputCode = document.getElementById('output-code');
+            const languageSelect = document.getElementById('language');
+            const actionSelect = document.getElementById('action');
+            const processBtn = document.getElementById('process-btn');
+            const clearBtn = document.getElementById('clear-btn');
+            const copyBtn = document.getElementById('copy-btn');
+            const sampleBtn = document.getElementById('sample-btn');
+            
+            const sampleCode = {
+                javascript: `// JavaScript sample
+function calculateTotal(items, tax) {
+  const total = items.reduce((sum, item) => sum + item.price, 0);
+  return total + (total * tax);
+}
+
+const items = [
+  { name: 'Book', price: 15 },
+  { name: 'Pen', price: 3 },
+  { name: 'Notebook', price: 8 }
+];
+
+console.log(calculateTotal(items, 0.1));`,
+                html: `<!DOCTYPE html>
+<!-- HTML sample -->
+<html>
+<head>
+<title>Sample Page</title>
+<style>
+body { font-family: Arial; margin: 20px; }
+.container { max-width: 800px; margin: 0 auto; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Welcome to my website</h1>
+<p>This is a sample paragraph with <strong>bold text</strong> and <em>italic text</em>.</p>
+<ul>
+<li>First item</li>
+<li>Second item</li>
+<li>Third item</li>
+</ul>
+</div>
+</body>
+</html>`,
+                css: `/* CSS sample */
+body {
+font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+margin: 0;
+padding: 0;
+background-color: #f5f5f5;
+}
+
+.container {
+width: 100%;
+max-width: 1200px;
+margin: 0 auto;
+padding: 20px;
+}
+
+.header {
+background: linear-gradient(135deg, #1a2a6c, #b21f1f);
+color: white;
+padding: 40px 0;
+text-align: center;
+border-radius: 0 0 20px 20px;
+box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.btn {
+display: inline-block;
+padding: 12px 28px;
+background: #ff7e5f;
+color: white;
+border-radius: 50px;
+text-decoration: none;
+font-weight: bold;
+transition: all 0.3s ease;
+}`,
+                json: `{
+  "name": "Code Beautifier",
+  "version": "1.0.0",
+  "description": "A tool to format and transpile code",
+  "features": [
+    "beautify",
+    "minify",
+    "transpile"
+  ],
+  "supportedLanguages": [
+    "JavaScript",
+    "HTML",
+    "CSS",
+    "JSON",
+    "JSX"
+  ],
+  "settings": {
+    "indentSize": 2,
+    "maxLineLength": 80
+  }
+}`,
+                jsx: `// JSX (React) sample
+import React, { useState } from 'react';
+
+function Counter() {
+  const [count, setCount] = useState(0);
+  
+  const increment = () => setCount(count + 1);
+  const decrement = () => setCount(count - 1);
+  
+  return (
+    <div className="counter">
+      <h2>Counter: {count}</h2>
+      <button onClick={increment} className="btn btn-inc">+</button>
+      <button onClick={decrement} className="btn btn-dec">-</button>
+      {count > 10 && <p>Count is greater than 10!</p>}
+    </div>
+  );
+}
+
+export default Counter;`
+            };
+            
+            processBtn.addEventListener('click', function() {
+                const code = inputCode.value;
+                const language = languageSelect.value;
+                const action = actionSelect.value;
+                
+                if (!code.trim()) {
+                    alert('Please enter some code to process.');
+                    return;
+                }
+                
+                try {
+                    let result = '';
+                    
+                    if (action === 'beautify') {
+                        result = beautifyCode(code, language);
+                    } else if (action === 'minify') {
+                        result = minifyCode(code, language);
+                    } else if (action === 'transpile') {
+                        result = transpileCode(code, language);
+                    }
+                    
+                    outputCode.value = result;
+                } catch (error) {
+                    outputCode.value = `Error: ${error.message}`;
+                }
+            });
+            
+            function beautifyCode(code, language) {
+                switch (language) {
+                    case 'javascript':
+                    case 'json':
+                    case 'jsx':
+                        return js_beautify(code, {
+                            indent_size: 2,
+                            space_in_empty_paren: true,
+                            brace_style: 'collapse,preserve-inline'
+                        });
+                    case 'html':
+                        return html_beautify(code, {
+                            indent_size: 2,
+                            indent_inner_html: true,
+                            wrap_line_length: 80
+                        });
+                    case 'css':
+                        return css_beautify(code, {
+                            indent_size: 2,
+                            newline_between_rules: true
+                        });
+                    default:
+                        return code;
+                }
+            }
+            
+            function minifyCode(code, language) {
+                switch (language) {
+                    case 'javascript':
+                    case 'jsx':
+                        return code
+                            .replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, '') 
+                            .replace(/\s+/g, ' ') 
+                            .replace(/^\s+|\s+$|(\s){2,}/g, '$1'); 
+                    case 'html':
+                        return code
+                            .replace(/<!--[\s\S]*?-->/g, '') 
+                            .replace(/\s+/g, ' ') 
+                            .replace(/>\s+</g, '><');
+                    case 'css':
+                        return code
+                            .replace(/\/\*[\s\S]*?\*\//g, '') 
+                            .replace(/\s+/g, ' ') 
+                            .replace(/\s*([{:;}])\s*/g, '$1') 
+                            .replace(/;}/g, '}'); 
+                    case 'json':
+                        try {
+                            return JSON.stringify(JSON.parse(code));
+                        } catch {
+                            return code.replace(/\s+/g, '');
+                        }
+                    default:
+                        return code;
+                }
+            }
+            
+            function transpileCode(code, language) {
+                if (language === 'javascript' || language === 'jsx') {
+                    try {
+                        return Babel.transform(code, { 
+                            presets: ['es2015', 'react'] 
+                        }).code;
+                    } catch (error) {
+                        throw new Error('Transpilation failed: ' + error.message);
+                    }
+                } else {
+                    return 'Transpilation is only supported for JavaScript and JSX.';
+                }
+            }
+            
+            clearBtn.addEventListener('click', function() {
+                inputCode.value = '';
+                outputCode.value = '';
+                inputCode.focus();
+            });
+            
+            copyBtn.addEventListener('click', function() {
+                if (outputCode.value.trim()) {
+                    outputCode.select();
+                    document.execCommand('copy');
+                    const originalText = copyBtn.innerHTML;
+                    copyBtn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                    setTimeout(() => {
+                        copyBtn.innerHTML = originalText;
+                    }, 2000);
+                }
+            });
+            
+            sampleBtn.addEventListener('click', function() {
+                const language = languageSelect.value;
+                inputCode.value = sampleCode[language] || sampleCode.javascript;
+                outputCode.value = '';
+            });
+            
+            languageSelect.addEventListener('change', function() {
+                outputCode.value = '';
+            });
+        });
+    </script>
+</body>
+</html>
